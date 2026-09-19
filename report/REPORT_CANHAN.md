@@ -88,14 +88,14 @@ Vượt qua bộ kiểm thử là điều kiện tính điểm phần này.
 
 | Cặp | Câu A | Câu B | Dự đoán | Điểm thực tế | Đúng? |
 |------|-----------|-----------|---------|--------------|-------|
-| 1 | | | cao / thấp | | |
-| 2 | | | cao / thấp | | |
-| 3 | | | cao / thấp | | |
-| 4 | | | cao / thấp | | |
-| 5 | | | cao / thấp | | |
+| 1 | Sinh viên cần đăng ký học phần trước hạn. | Người học phải hoàn tất việc ghi danh trước thời hạn. | Cao | 0.0639 | Không — MockEmbedder không hiểu đồng nghĩa |
+| 2 | Thư viện mở cửa lúc 8 giờ. | Python hỗ trợ lập trình hướng đối tượng. | Thấp | -0.0803 | Có |
+| 3 | Mỗi Short Loan kéo dài 3 giờ. | Một khoản mượn ngắn hạn có thời lượng ba tiếng. | Cao | -0.1264 | Không — MockEmbedder không hiểu tương đương số liệu |
+| 4 | Tài liệu được gửi qua email. | Bóng đá là môn thể thao đồng đội. | Thấp | -0.0359 | Có |
+| 5 | Tài liệu phải trả đúng hạn. | Người mượn cần hoàn trả tài liệu trước ngày hết hạn. | Cao | 0.2109 | Có |
 
 **Kết quả nào bất ngờ nhất? Điều này nói gì về cách embeddings biểu diễn ý nghĩa?**
-> *Viết 2-3 câu:*
+> Cặp 3 có cùng ý nghĩa và cùng nói về thời lượng 3 giờ nhưng MockEmbedder cho điểm âm. Điều này cho thấy MockEmbedder chỉ tạo vector giả từ MD5, không biểu diễn ngữ nghĩa; vì vậy điểm benchmark bằng mock chỉ dùng để kiểm tra pipeline, không dùng để kết luận chất lượng semantic retrieval.
 
 ---
 
@@ -105,13 +105,13 @@ Chạy **5 câu hỏi đánh giá của nhóm** trên mã nguồn cá nhân củ
 
 | # | Câu hỏi (Query) | Top-1 Chunk truy xuất được (tóm tắt) | Điểm Score | Có liên quan không? (Relevant) | Câu trả lời của Agent (tóm tắt) |
 |---|-------|--------------------------------|-------|-----------|------------------------|
-| 1 | Short Loan limits | `requesting-items#1` — 0.1292 | Không; gold phrase không nằm top-3 với MockEmbedder | Chưa đủ bằng chứng về 2 items/3 hours |
-| 2 | General Collection conditions | `borrowing-terms#2` — 0.2810 | Không; top-1 là mục overdue | Chưa đủ đúng điều kiện 365 ngày |
-| 3 | Digital copy request | `requesting-items#4` — 0.2286 | Có, top-1 | Đăng nhập catalogue, chọn digital copy, hoàn tất form và copyright acknowledgement |
-| 4 | Short Loan return location | `borrowing-limits#0` — 0.3016 | Không; gold phrase không nằm top-3 | Chưa trả lời chắc chắn được vị trí trả |
-| 5 | Student Resource Sharing | `resource-sharing-students#2` — 0.0587 | Có, top-2 với filter `audience=student` | Sinh viên postgraduate/honours, tối đa 100 items/năm |
+| 1 | Short Loan limits | `requesting-items#1` | 0.1292 | Không; gold phrase không nằm top-3 | Không đủ bằng chứng; đáp án chuẩn là tối đa 2 Short Loan, mỗi khoản 3 giờ. |
+| 2 | General Collection conditions | `borrowing-terms#2` — mục overdue | 0.2810 | Không; đúng tài liệu nhưng sai section | Không đủ đúng điều kiện 365 ngày; cần section General Collection loans. |
+| 3 | Digital copy request | `requesting-items#4` — mục Collection and digitisation | 0.2286 | Có, top-1 | Đăng nhập catalogue, chọn digital copy, hoàn tất form và copyright acknowledgement. |
+| 4 | Short Loan return location | `borrowing-limits#0` | 0.3016 | Không; gold phrase không nằm top-3 | Không trả lời chắc chắn; đáp án chuẩn là trả về nơi đã mượn. |
+| 5 | Student Resource Sharing | `resource-sharing-students#2` | 0.0587 | Có ở top-2 với filter `audience=student` | Postgraduate/honours students được mượn tối đa 100 items/năm. |
 
-**Bao nhiêu câu hỏi trả về chunk có liên quan trong top-3?** 2 / 5 với `MockEmbedder` nếu tính cả filter; riêng HeadingChunker có 1/5 câu đạt nội dung đầy đủ.
+**Bao nhiêu câu hỏi trả về chunk có liên quan trong top-3?** 2 / 5 với `MockEmbedder` và filter `audience=student`.
 
 **Điều hay nhất tôi học được từ thành viên khác / nhóm khác (qua demo):**
 > Chunking theo heading giữ được tên mục và giúp người đọc truy vết nguồn dễ hơn. Tuy nhiên benchmark phải dùng embedder có ngữ nghĩa; `MockEmbedder` chỉ phù hợp để kiểm tra cấu trúc nên không thể dùng thứ hạng của nó để kết luận chất lượng retrieval.
@@ -122,9 +122,9 @@ Chạy **5 câu hỏi đánh giá của nhóm** trên mã nguồn cá nhân củ
 
 | Tiêu chí | Điểm tự đánh giá |
 |----------|-------------------|
-| Khởi động (Warm-up) | / 5 |
-| Hướng tiếp cận của tôi (My Approach) | / 10 |
-| Hoàn thiện code (Core Implementation — tests) | / 30 |
-| Dự đoán độ tương tự (Similarity Predictions) | / 5 |
-| Kết quả truy xuất của tôi (Competition Results) | / 10 |
-| **Tổng phần cá nhân** | **/ 60** |
+| Khởi động (Warm-up) | 5 / 5 |
+| Hướng tiếp cận của tôi (My Approach) | 10 / 10 |
+| Hoàn thiện code (Core Implementation — tests) | 30 / 30 |
+| Dự đoán độ tương tự (Similarity Predictions) | 5 / 5 |
+| Kết quả truy xuất của tôi (Competition Results) | 5 / 10 |
+| **Tổng phần cá nhân** | **55 / 60** |
