@@ -1,0 +1,88 @@
+=== Baseline: built-in chunking strategies ===
+
+data/library-borrowing/borrowing-limits.md
+  fixed_size: count=2 avg_length=343.0
+  by_sentences: count=3 avg_length=227.0
+  recursive: count=2 avg_length=342.0
+
+data/library-borrowing/borrowing-terms.md
+  fixed_size: count=3 avg_length=368.7
+  by_sentences: count=4 avg_length=274.8
+  recursive: count=3 avg_length=367.3
+
+data/library-borrowing/requesting-items.md
+  fixed_size: count=3 avg_length=438.3
+  by_sentences: count=4 avg_length=327.0
+  recursive: count=4 avg_length=327.2
+
+Strategy: HeadingChunker
+Loaded 25 chunks from 6 documents
+
+=== Benchmark top-3 ===
+
+Q1: How many Short Loan items may be borrowed at once, and how long does each loan last?
+Filter: none
+Gold: Only two Short Loan items may be borrowed at once, and each Short Loan lasts 3 hours.
+  1. score=0.1292 doc_id=requesting-items chunk=requesting-items#1
+     ## Transfers and recalls A General Collection item can be transferred between the Conservatorium Library and the Camperdown/Darlington campus. Items already on the shelves at Fishe...
+  2. score=0.1234 doc_id=borrowing-limits chunk=borrowing-limits#3
+     ## Recalls  Every item is subject to recall. When another client recalls an item, the current borrower receives an email and has 7 days to return it before it becomes overdue....
+  3. score=0.0971 doc_id=resource-sharing-staff chunk=resource-sharing-staff#2
+     ## Request process  The staff member signs in to the Library catalogue and searches the University collection. If the item is unavailable, the search can be expanded to items share...
+
+Q2: Under what conditions may a General Collection item be kept for up to 365 days?
+Filter: none
+Gold: There must be no recall, the borrower's enrolment or membership must remain current, and the borrowing record must have no fines or blocks.
+  1. score=0.2810 doc_id=borrowing-terms chunk=borrowing-terms#2
+     ## Overdue, lost, or damaged items An item is marked lost when it is at least 32 days overdue, is returned damaged, or cannot be located by the borrower. Until a lost item is retur...
+  2. score=0.1867 doc_id=resource-sharing-students chunk=resource-sharing-students#2
+     ## Request process  The student signs in to the Library catalogue and searches the University collection. If the required item is absent, the student selects the option to include ...
+  3. score=0.1631 doc_id=resource-sharing-students chunk=resource-sharing-students#3
+     ## Timing and renewals  An external-library loan normally lasts at least 3 weeks, although the supplying institution sets the actual period. These loans generally cannot be renewed...
+
+Q3: How do I request a digital copy of a journal article or book chapter?
+Filter: none
+Gold: Sign in to the catalogue, select the journal and location, choose Request a digital copy, complete the form and copyright acknowledgement, and submit the request.
+  1. score=0.2286 doc_id=requesting-items chunk=requesting-items#4
+     ## Collection and digitisation  An item remains on the hold shelf for 7 days after the availability email is sent.  To request digitisation, the user signs in to the catalogue, sel...
+  2. score=0.2222 doc_id=resource-sharing-students chunk=resource-sharing-students#1
+     ## Eligibility and allowance  The Resource Sharing service is available to postgraduate students and honours students. Eligible students may borrow up to 100 items from other insti...
+  3. score=0.1292 doc_id=returning-items chunk=returning-items#2
+     ## Libcabinets  Material borrowed from a Libcabinet must be returned to that same machine. The borrower scans their card, opens the door, places the material on any shelf, and clos...
+
+Q4: Where must a Short Loan item be returned?
+Filter: none
+Gold: A Short Loan item must be returned to the location from which it was borrowed.
+  1. score=0.3016 doc_id=borrowing-limits chunk=borrowing-limits#0
+     # Limits on borrowing...
+  2. score=0.2913 doc_id=returning-items chunk=returning-items#3
+     ## Postal returns  Registered or express post is recommended so a postal return can be tracked. The Library removes the item from the borrower's account after receiving and checkin...
+  3. score=0.1531 doc_id=resource-sharing-staff chunk=resource-sharing-staff#0
+     # Resource sharing for staff...
+
+Q5: How many items can I borrow through Resource Sharing in a calendar year, and who is eligible?
+Filter: {'audience': 'student'}
+Gold: Postgraduate and honours students are eligible, and eligible students may borrow up to 100 items from other institutions per calendar year.
+  1. score=0.0587 doc_id=resource-sharing-students chunk=resource-sharing-students#2
+     ## Request process  The student signs in to the Library catalogue and searches the University collection. If the required item is absent, the student selects the option to include ...
+  2. score=0.0343 doc_id=resource-sharing-students chunk=resource-sharing-students#1
+     ## Eligibility and allowance  The Resource Sharing service is available to postgraduate students and honours students. Eligible students may borrow up to 100 items from other insti...
+  3. score=0.0263 doc_id=resource-sharing-students chunk=resource-sharing-students#3
+     ## Timing and renewals  An external-library loan normally lasts at least 3 weeks, although the supplying institution sets the actual period. These loans generally cannot be renewed...
+
+=== CP6 content-level evaluation ===
+Embedding backend: MockEmbedder (MD5-based; scores are not semantic)
+Scoring: 2 points if gold phrases are in top-1, 1 point if in top-2/3, 0 otherwise.
+
+Strategy summaries:
+- fixed_size: 4/10 with filter; Q5 filter 2/2 vs no filter 2/2
+- by_sentences: 3/10 with filter; Q5 filter 2/2 vs no filter 0/2
+- recursive: 3/10 with filter; Q5 filter 2/2 vs no filter 1/2
+- personal_heading: 3/10 with filter; Q5 filter 1/2 vs no filter 0/2
+
+Failure case:
+The HeadingChunker query about General Collection conditions retrieved the correct
+document but the top result was the unrelated overdue section. Checking only
+doc_id would mark this as success; checking gold phrases correctly gives 0 points.
+The fix is to use a semantic embedding backend and/or smaller section-aware chunks
+with metadata that identifies the information type.

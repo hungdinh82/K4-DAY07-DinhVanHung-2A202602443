@@ -1,8 +1,10 @@
 # Báo Cáo Cá Nhân — Lab 7: Embedding & Vector Store
 
-**Họ tên:** [Tên sinh viên]
-**Nhóm:** [Tên nhóm]
-**Ngày:** [Ngày nộp]
+**Họ tên:** Đinh Văn Hùng
+**Mã sinh viên:** 2A202602443
+**Vai trò:** Nhóm trưởng; R2 — Benchmark; R3 — Strategy
+**Nhóm:** 2 Idiots
+**Ngày:** 19/09/2026
 
 > **Nộp 1 bản / sinh viên.** Phần nhóm (lựa chọn tài liệu, thiết kế chiến lược, bộ câu hỏi đánh giá, demo) nộp chung 1 bản trong `REPORT_NHOM.md`. Chi tiết thang điểm: `docs/SCORING.md`.
 
@@ -15,29 +17,29 @@
 ### Độ tương tự Cosine (Cosine Similarity) (Bài tập 1.1)
 
 **Độ tương tự cosine cao (High cosine similarity) nghĩa là gì?**
-> *Viết 1-2 câu:*
+> Hai vector embedding có hướng gần nhau, cho thấy hai câu có nội dung hoặc ý nghĩa gần nhau.
 
 **Ví dụ có độ tương tự CAO:**
-- Câu A:
-- Câu B:
-- Tại sao tương đồng:
+- Câu A: Sinh viên cần đăng ký học phần trước hạn.
+- Câu B: Người học phải hoàn tất việc ghi danh trước thời hạn.
+- Tại sao tương đồng: Hai câu dùng từ khác nhau nhưng cùng diễn đạt một yêu cầu.
 
 **Ví dụ có độ tương tự THẤP:**
-- Câu A:
-- Câu B:
-- Tại sao khác:
+- Câu A: Thư viện mở cửa lúc 8 giờ.
+- Câu B: Python hỗ trợ lập trình hướng đối tượng.
+- Tại sao khác: Hai câu nói về hai chủ đề không liên quan.
 
 **Tại sao độ tương tự cosine (cosine similarity) được ưu tiên hơn khoảng cách Euclid (Euclidean distance) cho text embeddings?**
-> *Viết 1-2 câu:*
+> Cosine tập trung vào hướng của vector, thường phản ánh ngữ nghĩa tốt hơn và ít bị ảnh hưởng bởi độ dài văn bản. Với vector đã chuẩn hóa, dot product cũng chính là cosine similarity.
 
 ### Bài toán tính toán Chunking (Bài tập 1.2)
 
 **Tài liệu 10,000 ký tự, chunk_size=500, overlap=50. Bao nhiêu chunks?**
-> *Trình bày phép tính:*
-> *Đáp án:*
+> Tính: `ceil((10000 - 50) / (500 - 50)) = ceil(9950 / 450) = 23`.
+> Đáp án: **23 chunks**.
 
 **Nếu độ chồng chéo (overlap) tăng lên 100, số lượng chunk thay đổi thế nào? Tại sao muốn độ chồng chéo nhiều hơn?**
-> *Viết 1-2 câu:*
+> Số chunk tăng lên `ceil((10000 - 100) / (500 - 100)) = 25`. Overlap lớn hơn giúp giữ lại ngữ cảnh ở ranh giới giữa các chunk, nhưng làm tăng chi phí embedding và lưu trữ.
 
 ---
 
@@ -48,23 +50,23 @@ Giải thích cách tiếp cận của bạn khi lập trình (implement) các p
 ### Các hàm chia nhỏ (Chunking Functions)
 
 **`SentenceChunker.chunk`** — hướng tiếp cận:
-> *Viết 2-3 câu: dùng biểu thức chính quy (regex) gì để phát hiện câu? Xử lý trường hợp ngoại lệ (edge case) nào?*
+> Dùng regex lookbehind `(?<=[.!?])(?:\s+|\n+)` để tách sau dấu câu nhưng vẫn giữ dấu câu. Text rỗng trả về `[]`, sau đó gom các câu theo `max_sentences_per_chunk`. Edge case còn hạn chế là chữ viết tắt như `TS.`, `v.v.` và số thập phân có thể bị tách sai.
 
 **`RecursiveChunker.chunk` / `_split`** — hướng tiếp cận:
-> *Viết 2-3 câu: thuật toán hoạt động thế nào? Base case (trường hợp cơ sở) là gì?*
+> Thuật toán ưu tiên separator lớn như đoạn văn và dòng mới, sau đó đệ quy xuống separator nhỏ hơn khi mảnh vượt `chunk_size`. Các mảnh ngắn liền kề được gom lại gần giới hạn kích thước; nếu không còn separator thì chia theo số ký tự. Base case là text rỗng hoặc độ dài không vượt `chunk_size`.
 
 ### Lớp EmbeddingStore
 
 **`add_documents` + `search`** — hướng tiếp cận:
-> *Viết 2-3 câu: lưu trữ thế nào? Tính độ tương tự ra sao?*
+> Mỗi `Document` được chuẩn hóa thành một record gồm content, metadata và embedding rồi lưu trong in-memory store. `search` embed query, tính dot product với các vector đã chuẩn hóa, sắp xếp giảm dần theo score và trả về tối đa `top_k` kết quả.
 
 **`search_with_filter` + `delete_document`** — hướng tiếp cận:
-> *Viết 2-3 câu: lọc (filter) trước hay sau? Xóa bằng cách nào?*
+> Metadata được lọc trước khi similarity search để các vị trí top-k không bị tài liệu sai đối tượng chiếm mất. Metadata được copy và luôn có `doc_id` của file gốc; `delete_document` xóa mọi chunk có `metadata['doc_id']` trùng mã được chỉ định.
 
 ### Tác tử KnowledgeBaseAgent
 
 **`answer`** — hướng tiếp cận:
-> *Viết 2-3 câu: cấu trúc prompt? Cách đưa ngữ cảnh (inject context) vào thế nào?*
+> Agent truy xuất top-k chunk, đánh số từng context và ghi nguồn từ metadata vào prompt. Prompt yêu cầu chỉ dùng thông tin được cung cấp, nói rõ khi thiếu dữ liệu và trích dẫn số context; nếu store rỗng thì trả thông báo thay vì gọi LLM.
 
 ---
 
@@ -75,10 +77,10 @@ Vượt qua bộ kiểm thử là điều kiện tính điểm phần này.
 ### Kết Quả Kiểm Thử (Test Results)
 
 ```
-# Dán kết quả (output) của: pytest tests/ -v
+42 passed in 0.03s
 ```
 
-**Số lượng bài test vượt qua (pass):** __ / 42
+**Số lượng bài test vượt qua (pass):** 42 / 42
 
 ---
 
@@ -103,16 +105,16 @@ Chạy **5 câu hỏi đánh giá của nhóm** trên mã nguồn cá nhân củ
 
 | # | Câu hỏi (Query) | Top-1 Chunk truy xuất được (tóm tắt) | Điểm Score | Có liên quan không? (Relevant) | Câu trả lời của Agent (tóm tắt) |
 |---|-------|--------------------------------|-------|-----------|------------------------|
-| 1 | | | | | |
-| 2 | | | | | |
-| 3 | | | | | |
-| 4 | | | | | |
-| 5 | | | | | |
+| 1 | Short Loan limits | `requesting-items#1` — 0.1292 | Không; gold phrase không nằm top-3 với MockEmbedder | Chưa đủ bằng chứng về 2 items/3 hours |
+| 2 | General Collection conditions | `borrowing-terms#2` — 0.2810 | Không; top-1 là mục overdue | Chưa đủ đúng điều kiện 365 ngày |
+| 3 | Digital copy request | `requesting-items#4` — 0.2286 | Có, top-1 | Đăng nhập catalogue, chọn digital copy, hoàn tất form và copyright acknowledgement |
+| 4 | Short Loan return location | `borrowing-limits#0` — 0.3016 | Không; gold phrase không nằm top-3 | Chưa trả lời chắc chắn được vị trí trả |
+| 5 | Student Resource Sharing | `resource-sharing-students#2` — 0.0587 | Có, top-2 với filter `audience=student` | Sinh viên postgraduate/honours, tối đa 100 items/năm |
 
-**Bao nhiêu câu hỏi trả về chunk có liên quan trong top-3?** __ / 5
+**Bao nhiêu câu hỏi trả về chunk có liên quan trong top-3?** 2 / 5 với `MockEmbedder` nếu tính cả filter; riêng HeadingChunker có 1/5 câu đạt nội dung đầy đủ.
 
 **Điều hay nhất tôi học được từ thành viên khác / nhóm khác (qua demo):**
-> *Viết 2-3 câu:*
+> Chunking theo heading giữ được tên mục và giúp người đọc truy vết nguồn dễ hơn. Tuy nhiên benchmark phải dùng embedder có ngữ nghĩa; `MockEmbedder` chỉ phù hợp để kiểm tra cấu trúc nên không thể dùng thứ hạng của nó để kết luận chất lượng retrieval.
 
 ---
 
